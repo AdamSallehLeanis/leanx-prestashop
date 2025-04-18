@@ -1,0 +1,1 @@
+<p>Thank you! Your LeanX payment is being processed.</p>
