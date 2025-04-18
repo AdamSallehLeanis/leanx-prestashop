@@ -90,7 +90,7 @@ After installation:
 ---
 
 ## ❓ Support / Contributions
-For issues, contributions, or feature requests, please open an issue on [GitHub](https://github.com/your-org/leanx-prestashop/issues) (replace with your repo).
+For issues, contributions, or feature requests, please open an issue on [GitHub](https://github.com/AdamSallehLeanis/leanx-prestashop/issues).
 
 ---
 
