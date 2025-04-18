@@ -22,12 +22,7 @@ This module allows merchants to accept payments via **LeanX** in their PrestaSho
 
 ## 📦 Installation Instructions
 
-### 1. 🔹 Download the ZIP
-From the [GitHub Repository](https://github.com/AdamSallehLeanis/leanx-prestashop):
-- Click **Code > Download ZIP**
-- This gives you `leanx-prestashop-main.zip`
-
-### 2. ✉️ Download the Ready-to-Use ZIP
+### 1. ✉️ Download the Ready-to-Use ZIP
 
 To install the module easily:
 
