@@ -60,7 +60,6 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
         $leanxInvoiceId = $billInvoiceId . '-' . $orderId;
         $baseUrl = $isSandbox ? 'https://api.leanx.dev' : 'https://api.leanx.io';
         $apiUrl = $baseUrl . '/api/v1/public-merchant/public/collection-payment-portal?invoice_no=' . urlencode($leanxInvoiceId);
-        // $apiUrl = 'https://api.leanx.dev/api/v1/public-merchant/public/collection-payment-portal?invoice_no=' . urlencode($leanxInvoiceId);
 
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
