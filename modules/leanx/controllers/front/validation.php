@@ -8,6 +8,8 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {
+        $logFile = _PS_ROOT_DIR_ . '/var/logs/leanx_validation.log';
+
         $cart = $this->context->cart;
         $customer = new Customer($cart->id_customer);
         $orderTotal = $cart->getOrderTotal(true, Cart::BOTH);
@@ -26,7 +28,7 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
         // Create a PrestaShop order in “Waiting for Payment” state
         $this->module->validateOrder(
             $cart->id,
-            Configuration::get('PS_OS_OUTOFSTOCK'),
+            Configuration::get('LEANX_OS_AWAITING'),
             $orderTotal,
             $this->module->displayName,
             null,
@@ -58,6 +60,7 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
             'phone_number' => $phoneNumber,
             'client_data' => $orderId
         ];
+        file_put_contents($logFile, "Payload: " . print_r($payload, true) . "\n", FILE_APPEND);
 
         $leanxInvoiceId = $billInvoiceId . '-' . $orderId;
         $baseUrl = $isSandbox ? 'https://api.leanx.dev' : 'https://api.leanx.io';
@@ -65,7 +68,10 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
 
         $responseData = LeanXHelper::callApi($apiUrl, $payload, $authToken);
 
-        file_put_contents(_PS_ROOT_DIR_ . '/leanx_debug.json', $responseData);
+        // Log response:
+        PrestaShopLogger::addLog('Order #' . $orderId . ' created: Awaiting payment on LeanX Payment Gateway', 1);
+        file_put_contents($logFile, "Create Bill API Response: " . print_r($responseData, true) . "\n", FILE_APPEND);
+
         if (!isset($responseData['data']['redirect_url'])) {
             die('Invalid LeanX response. Payment cannot proceed.');
         }

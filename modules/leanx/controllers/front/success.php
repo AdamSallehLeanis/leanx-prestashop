@@ -1,10 +1,14 @@
 <?php
 
+require_once _PS_MODULE_DIR_ . 'leanx/classes/LeanXHelper.php';
+
 class LeanxSuccessModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {
         parent::initContent();
+
+        $logFile = _PS_ROOT_DIR_ . '/var/logs/leanx_validation.log';
 
         $orderId = (int) Tools::getValue('order_id');
         if (!$orderId) {
@@ -12,42 +16,23 @@ class LeanxSuccessModuleFrontController extends ModuleFrontController
         }
 
         $order = new Order($orderId);
-        $invoiceNo = Configuration::get('LEANX_BILL_INVOICE_ID') . '-' . $orderId;
-
         $authToken = Configuration::get('LEANX_AUTH_TOKEN');
         $isSandbox = (bool) Configuration::get('LEANX_IS_SANDBOX');
-        $apiUrl = $isSandbox
-            ? "https://api.leanx.dev/api/v1/public-merchant/public/manual-checking-transaction?invoice_no={$invoiceNo}"
-            : "https://api.leanx.io/api/v1/public-merchant/public/manual-checking-transaction?invoice_no={$invoiceNo}";
+        $leanxInvoiceId = Configuration::get('LEANX_BILL_INVOICE_ID') . '-' . $orderId;
+        $baseUrl = $isSandbox ? 'https://api.leanx.dev' : 'https://api.leanx.io';
+        $apiUrl = $baseUrl . '/api/v1/public-merchant/public/manual-checking-transaction?invoice_no=' . urlencode($leanxInvoiceId);
 
-        // Prepare request
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'accept: application/json',
-            'auth-token: ' . $authToken
-        ]);
+        $responseData = LeanXHelper::callApi($apiUrl, [], $authToken);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if (!$response || $httpCode !== 200) {
-            die('Unable to verify transaction.');
-        }
-
-        $data = json_decode($response, true);
-
-        if (!isset($data['data']['transaction_details']['invoice_status'])) {
+        if (!isset($responseData['data']['transaction_details']['invoice_status'])) {
             die('Invalid API response.');
         }
 
-        $invoiceStatus = $data['data']['transaction_details']['invoice_status'];
+        $invoiceStatus = $responseData['data']['transaction_details']['invoice_status'];
 
-        // Log if needed:
-        // file_put_contents(_PS_ROOT_DIR_ . '/leanx_success_debug.json', json_encode($data));
+        // Log response:
+        file_put_contents($logFile, "Transaction Status Check for Order #" . $orderId . " using Invoice ID: " . $leanxInvoiceId . "\n", FILE_APPEND);
+        file_put_contents($logFile, "Manual Check API Response: " . print_r($responseData, true) . "\n", FILE_APPEND);
 
         // Handle based on status
         if ($invoiceStatus === 'SUCCESS') {
@@ -60,6 +45,7 @@ class LeanxSuccessModuleFrontController extends ModuleFrontController
 
         // Redirect to confirmation or cart depending on status
         if ($invoiceStatus === 'SUCCESS') {
+            PrestaShopLogger::addLog('Payment successful for order #' . $orderId . ' on LeanX Payment Gateway', 1);
             Tools::redirect($this->context->link->getPageLink('order-confirmation', true, null, [
                 'id_cart' => $order->id_cart,
                 'id_module' => $this->module->id,
@@ -67,6 +53,7 @@ class LeanxSuccessModuleFrontController extends ModuleFrontController
                 'key' => $this->context->customer->secure_key,
             ]));
         } else {
+            PrestaShopLogger::addLog('Payment failed for order #' . $orderId . ' on LeanX Payment Gateway', 1);
             Tools::redirect($this->context->link->getModuleLink('leanx', 'failure', [
                 'order_id' => $orderId,
             ]));
