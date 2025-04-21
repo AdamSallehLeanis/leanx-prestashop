@@ -183,7 +183,8 @@ class LeanX extends PaymentModule
             $this->registerHook('paymentOptions') &&
             $this->registerHook('paymentReturn') &&
             $this->registerHook('displayCartItemOOSAlert') &&
-            $this->registerHook('displayFooter');
+            $this->registerHook('displayFooter') &&
+            $this->createLeanxOrderState();
     }
 
     public function uninstall()
@@ -246,5 +247,27 @@ class LeanX extends PaymentModule
         }
     
         return '';
+    }
+
+    private function createLeanxOrderState()
+    {
+        $orderState = new OrderState();
+        $orderState->color = '#3498db';
+        $orderState->send_email = false;
+        $orderState->module_name = $this->name;
+        $orderState->unremovable = false;
+        $orderState->paid = false;
+        $orderState->logable = false;
+
+        foreach (Language::getLanguages(false) as $lang) {
+            $orderState->name[$lang['id_lang']] = 'Awaiting payment on LeanX';
+        }
+
+        if ($orderState->add()) {
+            Configuration::updateValue('LEANX_OS_AWAITING', (int) $orderState->id);
+            return true;
+        }
+
+        return false;
     }
 }
