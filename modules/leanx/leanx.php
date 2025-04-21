@@ -5,6 +5,8 @@ if (!defined('_PS_VERSION_')) {
 
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
+require_once __DIR__ . '/classes/LeanXHelper.php';
+
 class LeanX extends PaymentModule
 {
     const CONFIG_IS_SANDBOX = 'LEANX_IS_SANDBOX';
@@ -25,7 +27,7 @@ class LeanX extends PaymentModule
         parent::__construct();
 
         $this->displayName = $this->l('LeanX');
-        $this->description = $this->l('LeanX Payment Gateway');
+        $this->description = $this->l('Accept payments through online banking, e-wallets, or credit cards with LeanX Payment Gateway');
 
         $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
     }
@@ -35,13 +37,61 @@ class LeanX extends PaymentModule
         $output = '';
 
         if (Tools::isSubmit('submitLeanXConfig')) {
-            Configuration::updateValue(self::CONFIG_IS_SANDBOX, Tools::getValue('LEANX_IS_SANDBOX'));
-            Configuration::updateValue(self::CONFIG_AUTH_TOKEN, Tools::getValue('LEANX_AUTH_TOKEN'));
-            Configuration::updateValue(self::CONFIG_HASH_KEY, Tools::getValue('LEANX_HASH_KEY'));
-            Configuration::updateValue(self::CONFIG_COLLECTION_UUID, Tools::getValue('LEANX_COLLECTION_UUID'));
-            Configuration::updateValue(self::CONFIG_BILL_INVOICE_ID, Tools::getValue('LEANX_BILL_INVOICE_ID'));
+            $authToken = Tools::getValue(self::CONFIG_AUTH_TOKEN);
+            $collectionUuid = Tools::getValue(self::CONFIG_COLLECTION_UUID);
+            $isSandbox = (bool) Tools::getValue(self::CONFIG_IS_SANDBOX);
+            $hashKey = Tools::getValue(self::CONFIG_HASH_KEY);
+        
+            $baseUrl = $isSandbox ? 'https://api.leanx.dev' : 'https://api.leanx.io';
+        
+            $errors = [];
+        
+            // Check empty values
+            if (empty($authToken)) {
+                $errors[] = $this->l('Auth Token is required.');
+            }
+        
+            if (empty($collectionUuid)) {
+                $errors[] = $this->l('Collection UUID is required.');
+            }
 
-            $output .= $this->displayConfirmation($this->l('Settings updated'));
+            if (empty($hashKey)) {
+                $errors[] = $this->l('Hash Key is required.');
+            }
+        
+            // Validate API Key
+            if (empty($errors)) {
+                $validateUrl = $baseUrl . '/api/v1/public-merchant/validate';
+                $response = LeanXHelper::callApi($validateUrl, ['api_key' => $authToken], $authToken);
+        
+                if ($response['response_code'] !== 2000 || $response['description'] !== 'SUCCESS') {
+                    $errors[] = $this->l('Invalid Auth Token.');
+                }
+            }
+        
+            // Validate Collection UUID
+            if (empty($errors)) {
+                $validateCollectionUrl = $baseUrl . '/api/v1/public-merchant/validate-collection-id';
+                $response = LeanXHelper::callApi($validateCollectionUrl, ['uuid' => $collectionUuid], $authToken);
+        
+                if ($response['response_code'] !== 2000 || $response['description'] !== 'SUCCESS') {
+                    $errors[] = $this->l('Invalid Collection UUID.');
+                }
+            }
+        
+            if (empty($errors)) {
+                Configuration::updateValue(self::CONFIG_IS_SANDBOX, $isSandbox);
+                Configuration::updateValue(self::CONFIG_AUTH_TOKEN, $authToken);
+                Configuration::updateValue(self::CONFIG_HASH_KEY, $hashKey);
+                Configuration::updateValue(self::CONFIG_COLLECTION_UUID, $collectionUuid);
+                Configuration::updateValue(self::CONFIG_BILL_INVOICE_ID, Tools::getValue(self::CONFIG_BILL_INVOICE_ID));
+        
+                $output .= $this->displayConfirmation($this->l('Settings updated and validated.'));
+            } else {
+                foreach ($errors as $err) {
+                    $output .= $this->displayError($err);
+                }
+            }
         }
 
         return $output . $this->renderForm();
@@ -117,7 +167,7 @@ class LeanX extends PaymentModule
         $helper->title = $this->displayName;
         $helper->show_cancel_button = false;
         $helper->fields_value = [
-            'LEANX_IS_SANDBOX' => Configuration::get(self::CONFIG_IS_SANDBOX),
+            'LEANX_IS_SANDBOX' => (int) Configuration::get(self::CONFIG_IS_SANDBOX),
             'LEANX_AUTH_TOKEN' => Configuration::get(self::CONFIG_AUTH_TOKEN),
             'LEANX_HASH_KEY' => Configuration::get(self::CONFIG_HASH_KEY),
             'LEANX_COLLECTION_UUID' => Configuration::get(self::CONFIG_COLLECTION_UUID),
