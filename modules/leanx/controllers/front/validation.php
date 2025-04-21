@@ -2,6 +2,8 @@
 
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
 
+require_once _PS_MODULE_DIR_ . 'leanx/classes/LeanXHelper.php';
+
 class LeanxValidationModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
@@ -61,26 +63,9 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
         $baseUrl = $isSandbox ? 'https://api.leanx.dev' : 'https://api.leanx.io';
         $apiUrl = $baseUrl . '/api/v1/public-merchant/public/collection-payment-portal?invoice_no=' . urlencode($leanxInvoiceId);
 
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json; charset=utf-8',
-            'auth-token: ' . $authToken
-        ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        $responseData = LeanXHelper::callApi($apiUrl, $payload, $authToken);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($httpCode !== 200 || !$response) {
-            die('Error communicating with LeanX payment API');
-        }
-
-        $responseData = json_decode($response, true);
-
-        file_put_contents(_PS_ROOT_DIR_ . '/leanx_debug.json', $response);
+        file_put_contents(_PS_ROOT_DIR_ . '/leanx_debug.json', $responseData);
         if (!isset($responseData['data']['redirect_url'])) {
             die('Invalid LeanX response. Payment cannot proceed.');
         }
