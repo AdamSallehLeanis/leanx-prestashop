@@ -40,11 +40,11 @@ leanx.zip
      ├── controllers/
      └── ...
 ```
-### 3. 📂 Upload to PrestaShop
+### 2. 📂 Upload to PrestaShop
 - Go to your PrestaShop **Back Office**
 - Navigate to **Modules > Module Manager**
 - Click **Upload a module** in the top right
-- Upload the freshly zipped `leanx.zip`
+- Upload the ZIP file `leanx.zip`
 - Click **Install** when prompted
 
 ---
@@ -61,7 +61,6 @@ After installation:
 - **Hash Key**
 - **Collection UUID**
 - **Bill Invoice ID Prefix** (optional)
-- Enable/disable **Sandbox Mode**
 
 ---
 
@@ -94,4 +93,4 @@ For issues, contributions, or feature requests, please open an issue on [GitHub]
 
 ---
 
-© 2025 LeanX Payment Team
+© 2025 LeanX
