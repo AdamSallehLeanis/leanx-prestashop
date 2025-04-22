@@ -10,7 +10,7 @@
 - Logs now written to `var/logs/` instead of root directory
 - Timestamped logs for callback and API response tracing
 
-### 🔁 Updated
+### Updated
 - `success.php` now uses `LeanXHelper::callApi()` instead of raw cURL for manual invoice checking
 - `callback.php` now uses `LeanXHelper::postJson()` for decoding signed payloads
 - Improved logging clarity and structure in callback and success controllers
