@@ -11,6 +11,7 @@ This module allows merchants to accept payments via **LeanX** in their PrestaSho
 - Secure callback handling (IPN) from LeanX
 - Order cloning for failed checkouts
 - Out-of-stock item restoration alerts
+- Cron job support to auto-cancel unpaid orders
 
 ---
 
@@ -40,6 +41,7 @@ leanx.zip
      ├── controllers/
      └── ...
 ```
+
 ### 2. 📂 Upload to PrestaShop
 - Go to your PrestaShop **Back Office**
 - Navigate to **Modules > Module Manager**
@@ -61,6 +63,72 @@ After installation:
 - **Hash Key**
 - **Collection UUID**
 - **Bill Invoice ID Prefix** (optional)
+- **Order Timeout (minutes)** (optional)
+
+---
+
+## ⏰ Cron Integration for Timeout Handler
+
+To automatically cancel **unpaid orders** after a set number of minutes (default is 30), you need to schedule a CRON job on your server.
+
+> **Note:** Setting up a CRON job typically requires access to the operating system via SSH.  
+> If you're on shared hosting or do not have terminal access, you may need to ask your **server administrator** or **PrestaShop host provider** to configure this for you.
+
+### ✅ What it does:
+- Periodically checks for orders still in **“Awaiting payment on LeanX”**
+- Calls the LeanX API to re-check the payment status
+- Cancels the order if it’s still unpaid or expired
+
+---
+
+### ⚙️ Step-by-Step Setup (Linux Server)
+
+> Requires terminal access (SSH) to your hosting/server
+
+#### 1. Connect to your server
+
+```bash
+ssh your-user@your-server-ip
+```
+
+#### 2. Open your user crontab
+
+```bash
+crontab -e
+```
+
+#### 3. Add the following CRON job at the bottom of the file:
+
+```bash
+*/15 * * * * /usr/bin/php /var/www/prestashop/modules/leanx/cron/timeout_handler.php > /dev/null 2>&1
+```
+
+This runs the script every 15 minutes. You can adjust the interval if needed.
+
+> ⚠️ Make sure the path to PHP (`/usr/bin/php`) and your PrestaShop folder (`/var/www/prestashop/...`) are correct for your environment.
+
+---
+
+### 🧪 Test It Manually (Optional)
+
+To manually test the timeout script:
+
+```bash
+php /var/www/prestashop/modules/leanx/cron/timeout_handler.php
+```
+
+You can check its log file here:
+
+```bash
+/var/www/prestashop/var/logs/leanx_timeout.log
+```
+
+---
+
+### 📝 Notes
+- The CRON job only affects orders in the **"Awaiting payment on LeanX"** state.
+- You can configure the **timeout duration** (in minutes) in the module's configuration page.
+- Orders with a successful payment won’t be affected.
 
 ---
 
@@ -78,6 +146,7 @@ After installation:
 - [ ] Place a test order
 - [ ] Verify redirect to LeanX and back
 - [ ] Ensure callbacks update order status
+- [ ] Ensure timeout handler cancels unpaid orders
 
 ---
 
