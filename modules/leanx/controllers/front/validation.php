@@ -17,7 +17,6 @@ class LeanxValidationModuleFrontController extends ModuleFrontController
 
         // Pull config
         $authToken = Configuration::get('LEANX_AUTH_TOKEN');
-        $hashKey = Configuration::get('LEANX_HASH_KEY');
         $collectionUuid = Configuration::get('LEANX_COLLECTION_UUID');
         $billInvoiceId = Configuration::get('LEANX_BILL_INVOICE_ID');
         $isSandbox = (bool) Configuration::get('LEANX_IS_SANDBOX');

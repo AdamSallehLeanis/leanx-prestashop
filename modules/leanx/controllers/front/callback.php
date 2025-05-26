@@ -44,7 +44,6 @@ class LeanxCallbackModuleFrontController extends ModuleFrontController
             $orderId = (int) $processData['client_data']['order_id'];
             $invoiceNo = $processData['invoice_no'] ?? '';
             $merchantInvoiceNo = $processData['client_data']['merchant_invoice_no'] ?? '';
-            $uuid = $processData['client_data']['uuid'] ?? '';
             $invoiceStatus = $processData['invoice_status'] ?? '';
             $amount = $processData['amount'] ?? '';
 
